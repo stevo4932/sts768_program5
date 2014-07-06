@@ -9,7 +9,7 @@
 
 public class jcrypt
 {
-   private jcrypt() {}
+
 
    private static final int ITERATIONS = 16;
 
@@ -555,7 +555,7 @@ public class jcrypt
       return(out);
    }
 
-   public static final String crypt(String salt, String original)
+   private static final String crypt(String salt, String original)
    {
       while(salt.length() < 2)
          salt += "A";
@@ -614,22 +614,18 @@ public class jcrypt
       return(buffer.toString());
    }
 
-   public static void main(String args[])
-   {
-      if(args.length != 2)
-      {
-         System.out.println("Usage: jcrypt saltValue password");
-      }
+   public static String compCrypt(String enc, String salt, String password){
+      if((salt+enc).equals(jcrypt.crypt(salt, password)))
+         return password;
       else
-      {
-         String salt     = args[0];
-         String password = args[1];
+         return null;
 
-         System.out.println(
-            "Salt: [" + salt + "], Password: [" + password + "] => [" +
-            jcrypt.crypt(salt, password) + "]"
-         );
-      }
-   }
+     }
+   
+      //example of how this should work
+    // public static void main(String args[])
+    // {
+    //    System.out.println(compCrypt("BgU8DFSLhhz6Q", "Bg", "ncc1701d"));
+    // }
 }
 
