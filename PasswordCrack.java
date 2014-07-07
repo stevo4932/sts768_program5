@@ -69,16 +69,11 @@ public class PasswordCrack{
 				return password;
 		}
 	}
-	
-	private static String findOnce(User u, String word){
-		jcrypt crypt = new jcrypt();
-		Options op = new Options();
-		return crypt.compCrypt(u.getPassword(), u.getSalt(), word);
-	}
 
-	private static String loop1(User u, LinkedList<String> words, boolean twice){
+	private static String loop1(User u, LinkedList<String> words){
 		words = addWords(u, words);
 		Options op = new Options();
+		jcrypt crypt = new jcrypt();
 		Iterator<String> itr = words.iterator();
 		while(itr.hasNext()){
 			String word = itr.next();
@@ -86,49 +81,74 @@ public class PasswordCrack{
 				for(int j = 0; j < op.length(); j++){ //process two
 					if(j == 11 || j == 12){
 						for(char c = 33; c < 127; c++){
-							String newWord = findOnce(u, processWord(word, j, c));
+							String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(word, j, c));
 							if(newWord != null)
 								return newWord;
 						}
 					}else if(j == 13){
 						for(char k = 0; k <= word.length(); k++){
-							String newWord = findOnce(u, processWord(word, j, k));
+							String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(word, j, k));
 							if(newWord != null)
 								return newWord;
 						}
 					}else{
-						String newWord = findOnce(u, processWord(word, j, (char)0));
+						String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(word, j, (char)0));
 						if(newWord != null)
 							return newWord;
 					}
 				}
 			//}
 		}
-		return loop2(u, words, twice);
+		return loop2(u, words);
 	}	
 
-	public static String loop2(User u, LinkedList<String> words, boolean twice){
-		//words = addWords(u, words);
+	public static String loop2(User u, LinkedList<String> words){
 		Options op = new Options();
+		jcrypt crypt = new jcrypt();
 		Iterator<String> itr = words.iterator();
 		while(itr.hasNext()){
 			String word = itr.next();
 			for(int i = 1; i < op.length(); i++){ //process one
 				for(int j = 1; j < op.length(); j++){ //process two
-					if(i == 11 || j == 11 || i == 12 || j == 12){
+					
+					if(i == 13 && (j == 11 || j == 12)){
+						for(char l = 33; l < 127; l++){
+							for(char k = 1; k <= word.length(); k++){
+								String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(processWord(word, i, k), j, l));
+								if(newWord != null)
+									return newWord;
+							}
+						}
+					}else if(j == 13 && (i == 11 || i == 12)){
+						for(char l = 33; l < 127; l++){
+							for(char k = 1; k <= word.length(); k++){
+								String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(processWord(word, i, l), j, k));
+								if(newWord != null)
+									return newWord;
+							}
+						}
+					}else if(i == 11 || j == 11 || i == 12 || j == 12){
 						for(char c = 33; c < 127; c++){
-							String newWord = findOnce(u, processWord(processWord(word, i, c), j, c));
+							String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(processWord(word, i, c), j, c));
 							if(newWord != null)
 								return newWord;
 						}
-					}else if(i == 13 || j == 13){
-						for(char k = 0; k <= word.length(); k++){
-							String newWord = findOnce(u, processWord(processWord(word, i, k), j, k));
+					}else if (i == 13 ^ j == 13){
+						for(char k = 1; k <= word.length(); k++){
+							String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(processWord(word, i, k), j, k));
 							if(newWord != null)
 								return newWord;
+						}
+					}else if( i == 13 && j == 13){
+						for(char l = 0; l <= word.length(); l++){
+							for(char k = 1; k <= word.length(); k++){
+								String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(processWord(word, i, k), j, l));
+								if(newWord != null)
+									return newWord;
+							}
 						}
 					}else{
-						String newWord = findOnce(u, processWord(processWord(word, i, (char)0), j, (char)0));
+						String newWord = crypt.compCrypt(u.getPassword(), u.getSalt(), processWord(processWord(word, i, (char)0), j, (char)0));
 						if(newWord != null)
 							return newWord;
 					}
@@ -142,17 +162,19 @@ public class PasswordCrack{
 	//Input; possible passwords
 	//Output: User's password (null if no Matches)
 	public static void main(String[] args){
+		StopWatch watch = new StopWatch();
 		File dictionary = new File(args[0]);
 		File passwords = new File(args[1]);
 
 		LinkedList<User> userList = makeUsers(passwords);
 		LinkedList<String> wordList = makeWords(dictionary);
 		Iterator<User> itr = userList.iterator();
+		watch.start();
 		while(itr.hasNext()){	
 			User u = itr.next();
-			String result = loop1(u, wordList, false);
-			String user = u.getFirstName();
-			System.out.println(user+ "  " +result);
-		}		
+			System.out.println(u.getFirstName()+ "  " +loop1(u, wordList));
+		}	
+		watch.stop();
+		System.out.println("Elapsed Time: "+ watch.getElapsedTimeSecs());	
 	}
 }
